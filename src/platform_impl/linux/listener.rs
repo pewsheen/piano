@@ -1,5 +1,13 @@
-use std::ptr;
+use gtk::{gdk::EventKey, prelude::Continue, traits::WidgetExt, Inhibit};
+use std::{ptr, rc::Rc};
 use x11_dl::xlib::{self, Xlib, _XDisplay};
+
+use crate::{
+  event::ElementState,
+  keyboard::{self, KeyCode, ModifiersState},
+};
+
+use super::keyboard::get_modifiers;
 
 fn grab_key(xlib: &Xlib, display: *mut _XDisplay, window: u64) {
   unsafe {
@@ -8,7 +16,7 @@ fn grab_key(xlib: &Xlib, display: *mut _XDisplay, window: u64) {
       xlib::AnyKey,
       xlib::AnyModifier,
       window,
-      1,
+      0,
       xlib::GrabModeAsync,
       xlib::GrabModeAsync,
     );
@@ -21,13 +29,49 @@ fn ungrab_key(xlib: &Xlib, display: *mut _XDisplay, window: u64) {
   }
 }
 
-fn send_event(xlib: &Xlib, display: *mut _XDisplay, event: *mut xlib::XEvent) {
+fn send_event(xlib: &Xlib, display: *mut _XDisplay, window: u64, event: *mut xlib::XEvent) {
   unsafe {
-    (xlib.XSendEvent)(display, xlib::InputFocus as u64, 1, (*event).get_type() as i64, event);
+    (xlib.XSendEvent)(
+      display,
+      window,
+      1,
+      (*event).get_type() as i64,
+      event,
+    );
   }
 }
 
-pub fn run() {
+pub fn run(window: &gtk::ApplicationWindow) {
+  let keyboard_handler = Rc::new(move |event_key: EventKey, element_state| {
+    // if we have a modifier lets send it
+    let mut mods = get_modifiers(event_key.clone());
+    if !mods.is_empty() {
+      // if we release the modifier tell the world
+      if ElementState::Released == element_state {
+        mods = ModifiersState::empty();
+      }
+    }
+
+    let scancode = event_key.hardware_keycode();
+    let physical_key = KeyCode::from_scancode(scancode as u32);
+
+    // todo: implement repeat?
+    // let event = make_key_event(&event_key, false, None, element_state);
+
+    println!("key: {:?}, modifier: {:?}", physical_key, mods);
+
+    Continue(true)
+  });
+
+  let handler = keyboard_handler.clone();
+  window.connect_key_press_event(move |_, event_key| {
+    handler(event_key.to_owned(), ElementState::Pressed);
+    // ime.filter_keypress(event_key);
+    println!("{:?}", event_key);
+
+    Inhibit(true)
+  });
+
   std::thread::spawn(move || {
     let xlib = xlib::Xlib::open().unwrap();
     unsafe {
@@ -44,14 +88,9 @@ pub fn run() {
       #[allow(clippy::uninit_assumed_init)]
       let mut event: xlib::XEvent = std::mem::MaybeUninit::uninit().assume_init();
 
-      (xlib.XGetInputFocus)(display, &mut cur_window, &mut revert);
-      (xlib.XSelectInput)(
-        display,
-        cur_window,
-        xlib::KeyPressMask | xlib::KeyReleaseMask | xlib::FocusChangeMask,
-      );
+      // (xlib.XSelectInput)(display, root, xlib::KeyPressMask | xlib::KeyReleaseMask);
 
-      grab_key(&xlib, display, cur_window);
+      grab_key(&xlib, display, root);
 
       loop {
         if (xlib.XPending)(display) > 0 {
@@ -60,9 +99,9 @@ pub fn run() {
             let keycode = event.key.keycode;
             let modifiers = event.key.state;
             println!("keycode: {:?}, modifier: {:?}", keycode, modifiers);
+            send_event(&xlib, display, root, &mut event);
           } else if let xlib::FocusOut = event.get_type() {
             println!("prev: {:?}", cur_window);
-
             // unregister focus out window's event mask.
             if cur_window != root {
               (xlib.XSelectInput)(display, cur_window, 0);

@@ -4,7 +4,7 @@
 use tao::{
   event::{Event, WindowEvent},
   event_loop::{ControlFlow, EventLoop},
-  window::WindowBuilder,
+  window::WindowBuilder, platform::unix::WindowExtUnix,
 };
 
 use piano::listener::run_listener;
@@ -12,8 +12,6 @@ use piano::listener::run_listener;
 #[allow(clippy::single_match)]
 fn main() {
   let event_loop = EventLoop::new();
-
-  run_listener();
 
   let mut window = Some(
     WindowBuilder::new()
@@ -23,6 +21,7 @@ fn main() {
       .unwrap(),
   );
 
+  run_listener(&window.as_ref().unwrap().gtk_window());
 
   event_loop.run(move |event, _, control_flow| {
     *control_flow = ControlFlow::Wait;

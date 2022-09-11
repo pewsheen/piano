@@ -11,6 +11,10 @@ mod platform_impl;
 #[macro_use]
 extern crate bitflags;
 
+#[allow(unused_imports)]
+#[macro_use]
+extern crate lazy_static;
+
 use event::KeyEvent;
 
 static KEY_EVENT_CHANNEL: Lazy<(Sender<KeyEvent>, Receiver<KeyEvent>)> = Lazy::new(|| unbounded());

@@ -10,6 +10,7 @@ crossbeam-channel = "0.5"
 once_cell = "*"
 serde = "*"
 bitflags = "*"
+lazy_static = "1"
 
 [dev-dependencies]
 winit = { git = "https://github.com/rust-windowing/winit" }
@@ -20,3 +21,7 @@ core-graphics = "0.22"
 
 [target."cfg(any(target_os = \"linux\", target_os = \"dragonfly\", target_os = \"freebsd\", target_os = \"openbsd\", target_os = \"netbsd\"))".dependencies]
 x11-dl = "2.19"
+gtk = { version = "0.15", features = [ "v3_22" ] }
+gdk = { version = "0.15", features = [ "v3_22" ] }
+gdk-sys = "0.15"
+glib-sys = "0.15"

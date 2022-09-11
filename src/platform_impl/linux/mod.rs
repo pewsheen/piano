@@ -1,4 +1,5 @@
 mod keycode;
+mod keyboard;
 pub mod listener;
 
 pub use self::keycode::{keycode_from_scancode, keycode_to_scancode};
