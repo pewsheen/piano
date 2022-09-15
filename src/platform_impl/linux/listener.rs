@@ -23,7 +23,7 @@ pub fn run() {
     unsafe {
       let display = (xlib.XOpenDisplay)(ptr::null());
 
-      let mut stateTable: [bool; 32] = [false; 32];
+      let mut states: [bool; 32] = [false; 32];
       let mut prev_keymap: [u8; 32] = [0; 32];
       (xlib.XQueryKeymap)(display, prev_keymap.as_mut_ptr());
 
@@ -37,12 +37,12 @@ pub fn run() {
 
             let physical_key = KeyCode::from_scancode(keycode as u32);
 
-            let state: &str = match stateTable[i] {
+            let state: &str = match states[i] {
               true => "released",
               false => "pressed",
             };
 
-            stateTable[i] = !stateTable[i];
+            states[i] = !states[i];
 
             println!("{:?}, {:?}, {}", keycode, physical_key, state);
           }
