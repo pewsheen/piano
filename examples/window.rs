@@ -4,7 +4,8 @@
 use tao::{
   event::{Event, WindowEvent},
   event_loop::{ControlFlow, EventLoop},
-  window::WindowBuilder, platform::unix::WindowExtUnix,
+  platform::unix::WindowExtUnix,
+  window::WindowBuilder,
 };
 
 use piano::listener::run_listener;
@@ -21,7 +22,7 @@ fn main() {
       .unwrap(),
   );
 
-  run_listener(&window.as_ref().unwrap().gtk_window());
+  run_listener();
 
   event_loop.run(move |event, _, control_flow| {
     *control_flow = ControlFlow::Wait;
